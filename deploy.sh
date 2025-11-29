@@ -95,4 +95,5 @@ main() {
     log "Frontend running at http://localhost:80"
 }
 
+# Run main function
 main "$@"
