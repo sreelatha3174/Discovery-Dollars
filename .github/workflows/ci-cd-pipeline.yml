@@ -49,19 +49,29 @@ jobs:
           BACKEND_IMAGE="${{ env.DOCKER_HUB_REGISTRY }}/${{ env.DOCKER_HUB_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}"
           FRONTEND_IMAGE="${{ env.DOCKER_HUB_REGISTRY }}/${{ env.DOCKER_HUB_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}"
           
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          # For PRs, don't push - just build
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "backend_tags=${BACKEND_IMAGE}:pr-${{ github.event.number }}" >> $GITHUB_OUTPUT
+            echo "frontend_tags=${FRONTEND_IMAGE}:pr-${{ github.event.number }}" >> $GITHUB_OUTPUT
+            echo "should_push=false" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "backend_tags=${BACKEND_IMAGE}:latest,${BACKEND_IMAGE}:${{ github.sha }}" >> $GITHUB_OUTPUT
             echo "frontend_tags=${FRONTEND_IMAGE}:latest,${FRONTEND_IMAGE}:${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "should_push=true" >> $GITHUB_OUTPUT
           else
-            echo "backend_tags=${BACKEND_IMAGE}:${{ github.ref_name }}" >> $GITHUB_OUTPUT
-            echo "frontend_tags=${FRONTEND_IMAGE}:${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            # For other branches (develop, etc)
+            BRANCH_NAME="${{ github.ref_name }}"
+            BRANCH_NAME="${BRANCH_NAME//\//-}"
+            echo "backend_tags=${BACKEND_IMAGE}:${BRANCH_NAME}" >> $GITHUB_OUTPUT
+            echo "frontend_tags=${FRONTEND_IMAGE}:${BRANCH_NAME}" >> $GITHUB_OUTPUT
+            echo "should_push=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Build and push backend image
         uses: docker/build-push-action@v5
         with:
           context: ./backend
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          push: ${{ steps.tags.outputs.should_push == 'true' }}
           tags: ${{ steps.tags.outputs.backend_tags }}
           cache-from: type=registry,ref=${{ env.DOCKER_HUB_REGISTRY }}/${{ env.DOCKER_HUB_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.DOCKER_HUB_REGISTRY }}/${{ env.DOCKER_HUB_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}:buildcache,mode=max
@@ -70,7 +80,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          push: ${{ steps.tags.outputs.should_push == 'true' }}
           tags: ${{ steps.tags.outputs.frontend_tags }}
           cache-from: type=registry,ref=${{ env.DOCKER_HUB_REGISTRY }}/${{ env.DOCKER_HUB_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.DOCKER_HUB_REGISTRY }}/${{ env.DOCKER_HUB_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}:buildcache,mode=max
