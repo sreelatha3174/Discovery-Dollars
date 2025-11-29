@@ -64,6 +64,18 @@ main() {
     docker pull "$FRONTEND_IMAGE" || error_exit "Failed to pull frontend image"
     success "Frontend image pulled successfully"
     
+    log "Updating docker-compose to use pulled images if needed..."
+    # If docker-compose.yml references local build contexts (build: ./backend or build: ./frontend)
+    # replace them with the pulled image names so the remote VM doesn't attempt to build from missing dirs.
+    if grep -q "build:" "$COMPOSE_FILE"; then
+        cp "$COMPOSE_FILE" "${COMPOSE_FILE}.bak"
+        sed -i "s|build: ./backend|image: ${BACKEND_IMAGE}|g" "$COMPOSE_FILE"
+        sed -i "s|build: ./frontend|image: ${FRONTEND_IMAGE}|g" "$COMPOSE_FILE"
+        success "Updated $COMPOSE_FILE to use pulled images (backup at ${COMPOSE_FILE}.bak)"
+    else
+        log "No build contexts found in $COMPOSE_FILE; leaving as-is"
+    fi
+
     log "Stopping existing containers..."
     docker-compose down || warning "Failed to stop containers or containers not running"
     success "Containers stopped"
