@@ -67,7 +67,7 @@ jobs:
           fi
 
       - name: Build services using Docker Compose
-        run: docker-compose -f docker-compose.yml build
+        run: docker compose -f docker-compose.yml build
 
       - name: Image build summary
         run: |
