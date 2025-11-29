@@ -67,8 +67,8 @@ jobs:
           fi
           cache-to: type=gha,mode=max
           cache-to: type=gha,mode=max
-        - name: Build services using Docker Compose
-          run: docker-compose -f docker-compose.yml build
+      - name: Build services using Docker Compose
+        run: docker-compose -f docker-compose.yml build
 
       - name: Image build summary
         run: |
