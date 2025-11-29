@@ -4,12 +4,15 @@ services:
   backend:
     build: ./backend
     container_name: backend
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     environment:
       - MONGO_URI=mongodb://mongo:27017/dd_db
+      - PORT=8080
     depends_on:
       - mongo
+    networks:
+      - app-network
 
   frontend:
     build: ./frontend
@@ -18,14 +21,22 @@ services:
       - "80:80"
     depends_on:
       - backend
+    networks:
+      - app-network
 
   mongo:
     image: mongo:7
     container_name: mongo
-    ports:
-      - "27017:27017"
+    expose:
+      - "27017"
     volumes:
       - mongo-data:/data/db
+    networks:
+      - app-network
 
 volumes:
   mongo-data:
+
+networks:
+  app-network:
+    driver: bridge
