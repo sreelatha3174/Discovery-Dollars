@@ -65,8 +65,7 @@ jobs:
             echo "frontend_tags=${FRONTEND_IMAGE}:${BRANCH_NAME}" >> $GITHUB_OUTPUT
             echo "should_push=false" >> $GITHUB_OUTPUT
           fi
-          cache-to: type=gha,mode=max
-          cache-to: type=gha,mode=max
+
       - name: Build services using Docker Compose
         run: docker-compose -f docker-compose.yml build
 
